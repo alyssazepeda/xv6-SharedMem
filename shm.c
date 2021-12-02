@@ -41,7 +41,7 @@ int shm_open(int id, char **pointer) {
   unsigned i;
   //used to find an empty entry in the table 
   //assigned to 64 so we can check if it was assigned any spot in the table (0-63)
-  unsigned int entry = 64; 
+  unsigned j; 
   //Case 1: The id we are opening already exists
   for(i = 0; i<64; i++)
   {
@@ -53,24 +53,32 @@ int shm_open(int id, char **pointer) {
       shm_table.shm_pages[i].refcnt++; //increment the refcnt
       break; //GOTO : Updating & Returning
     }
-    //As we loop through the table we look for empty entries for Case 2
-    if(shm_table.shm_pages[i].id==0 && entry==64) 
-    {
-      entry = i; //we found the empty spot
-    }
+    // //As we loop through the table we look for empty entries for Case 2
+    // if(shm_table.shm_pages[i].id==0 && entry==64) 
+    // {
+    //   entry = i; //we found the empty spot
+    // }
   }
   //Case 2: The id we are opening does not exist(e.g. exists still = 0)
-  if(!exists && entry<64)
+  if(!exists)
   {
-    shm_table.shm_pages[entry].id = id; //initialize id to the one passed to us
-    memset(kalloc(), 0, PGSIZE);
-    shm_table.shm_pages[entry].frame = kalloc(); //store the addesss in frame
-    shm_table.shm_pages[entry].refcnt++;
-    mappages(curproc->pgdir, (char *)va, PGSIZE, V2P(shm_table.shm_pages[entry].frame), PTE_W|PTE_U);
+    for(j = 0; j < 64; j++) 
+    {
+      if(shm_table.shm_pages[j].id == 0 && shm_table.shm_pages[j].frame == 0 && shm_table.shm_pages[j].refcnt == 0) 
+      {
+        shm_table.shm_pages[j].id = id; //initialize id to the one passed to us
+        // memset(kalloc(), 0, PGSIZE);
+        shm_table.shm_pages[j].frame = kalloc(); //store the addesss in frame
+        memset(shm_table.shm_pages[j].frame, 0, PGSIZE);
+        shm_table.shm_pages[j].refcnt++;
+        mappages(curproc->pgdir, (char *)va, PGSIZE, V2P(shm_table.shm_pages[j].frame), PTE_W|PTE_U);
+        break;
+      }
+    }
   }
 
   //Updating & Returning//
-  *pointer = (char *)va; //return pointer to the virtual address
+  *pointer = (char *)PGROUNDUP(curproc->sz); //return pointer to the virtual address
   curproc->sz = va + PGSIZE; //update sz since we expanded the virtual address
   release(&(shm_table.lock)); //release the lock
   return 0; //remains 0 bc we updated the values outputted in the tests in the code
