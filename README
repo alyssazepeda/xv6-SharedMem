@@ -47,3 +47,7 @@ will need to install a cross-compiler gcc suite capable of producing
 x86 ELF binaries. See http://pdos.csail.mit.edu/6.828/2016/tools.html.
 Then run "make TOOLPREFIX=i386-jos-elf-". Now install the QEMU PC
 simulator and run "make qemu".
+
+********************************************************************
+In this version , we are re-implementing support to enable two processes to share a memory page. 
+This is implemented by having an entry in both process page tables point to the same physical page.
